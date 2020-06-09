@@ -1,0 +1,12 @@
+
+# features
+# NUM = sg pl
+
+# rules
+S[NUM=?] -> NP[NUM=?] VP[NUM=?]
+NP[NUM=2] -> NNS[NUM=2]
+NP[NUM=2] -> NNPS[NUM=2]
+NP[NUM=2] -> DT[NUM=2] NNS[NUM=2]
+NP[NUM=1] -> DT[NUM=1] NN[NUM=1]
+VP[NUM=2] -> VBP[NUM=2] ADJP[NUM=?]
+VP[NUM=1] -> VBZ[NUM=1] ADJP[NUM=?]
