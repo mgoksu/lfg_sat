@@ -1,170 +1,118 @@
-from collections import defaultdict
-from math import log
-# from IPython import embed
 import sys
+import math 
+from collections import defaultdict
+from tree import Tree
 
 
-dic = defaultdict(list)
+def unary(i, j, sentence, dp, back):
+    for r1 in runa:
+        for r2 in runa[r1]:
+            score = runa[r1][r2] + dp[i][j][r2[0]]
+            if score < dp[i][j][r1]:
+                if r2[0] == sentence[i]:
+                    dp[i][j][r1] = score
+                    back[i][j][r1] = ('Terminal', r2)
+                else:
+                    dp[i][j][r1] = score
+                    back[i][j][r1] = ('NonTerminal', r2)
 
-grammar_path = 'grammar.pcfg.bin'
-with open(grammar_path, 'r') as f:
-    for line in f.readlines():
-        if '->' in line:
-            k, v = line.split('->')
-            y, p = v.split('#')
-            dic[y.strip()].append((k.strip(), log(float(p))))
+def cky(sentence):
+    dp = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: 9999999.)))
+    back = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
+    n = len(sentence)
 
+    for i in xrange(n):
+        dp[i][i+1][sentence[i]] = 0.0
 
-def unary(dic, K, _dp, _bt, i, j):
-    q = [(_k, _p, K) for _k, _p in dic[K] if ' ' not in _k]
+    for diff in xrange(1,n+1):
+        for i in xrange(n - diff + 1):
+            j = i + diff
+            for k in xrange(i+1, j):
+                for r1 in rbin:
+                    for r2 in rbin[r1]:
+                        score = rbin[r1][r2] + dp[i][k][r2[0]] + dp[k][j][r2[1]]
+                        if score < dp[i][j][r1]:
+                            dp[i][j][r1] = score
+                            back[i][j][r1] = (k, r2)
+            for itr in xrange(10):
+                unary(i, j, sentence, dp, back)
+    for i in xrange(10):
+        unary(0, len(sentence), sentence, dp, back)
+    return dp, back
 
-    while len(q) > 0:
-        _k, _p, k = q[0]
-        q = q[1:]
-        if ' ' not in _k:
-            p = _dp[k]
-            if _k not in _dp:
-                _dp[_k] = p+_p
-                _bt[_k] = ((i, j, k))
-                q += [(__k, __p, _k) for __k, __p in dic[_k] if ' ' not in __k]
-            elif p+_p > _dp[_k]:
-                _dp[_k] = p+_p
-                _bt[_k] = ((i, j, k))
-                q += [(__k, __p, _k) for __k, __p in dic[_k] if ' ' not in __k]
-    return _dp, _bt
-
-
-def backtrace(bt, i, j, t):
-    a = bt[i][j][t]
-    if len(a) == 3:
-        _i, _j, _t = a
-        if _t == t and i == _i and j == _j:
-            return t
-        if t.endswith("'"):
-            return backtrace(bt, _i, _j, _t)
+def backtrack(i, j, r1, sentence_origin, back):
+    def rev(i, j, r1, sentence_origin):
+        if back[i][j][r1] == None:
+            return ''
+        (k, r2) = back[i][j][r1]
+        if k == 'Terminal':
+            return '(' + r1 + ' ' + sentence_origin[i] + ')'
+        elif k == 'NonTerminal':
+            return '(' + r1 + ' ' + rev(i,j,r2[0],sentence_origin) + ')'
         else:
-            return '(%s %s)' % (t, backtrace(bt, _i, _j, _t))
+            return '(' + r1 + ' ' + rev(i,k,r2[0],sentence_origin) + ' ' + rev(k,j,r2[1],sentence_origin) + ')'
+    return rev(i, j, r1, sentence_origin)
+
+def debinarize(t):
+    if t.is_terminal():
+        return t.dostr()
+    res = ''
+    if t.label[-1] != '\'':
+        res += '(' + t.label + ' '
+        for i,x in enumerate(t.subs):
+            if i < len(t.subs) - 1:
+                res += debinarize(x) + ' '
+            else:
+                res += debinarize(x)
+        res += ')'
     else:
-        (i0, j0, k0), (i1, j1 ,k1) = a
-        if t.endswith("'"):
-            return '%s %s' % (backtrace(bt, i0, j0, k0), backtrace(bt, i1, j1, k1))
-        else:
-            return '(%s %s %s)' % (t, backtrace(bt, i0, j0, k0), backtrace(bt, i1, j1, k1))
+        for i,x in enumerate(t.subs):
+            if i < len(t.subs) - 1:
+                res += debinarize(x) + ' '
+            else:
+                res += debinarize(x)
+    return res
 
+# main
 
-def initialize(sent, dic, unk):
-    dp = defaultdict(lambda: defaultdict(dict))
-    bt = defaultdict(lambda: defaultdict(dict))
+if __name__ == "__main__":
+    # dp = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    # back = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
+    rbin = defaultdict(lambda: defaultdict(float))
+    runa = defaultdict(lambda: defaultdict(float))
+    lexicon = set()
 
-    for i, w in enumerate(sent):
-        if unk and (w not in dic or len(dic[w]) == 0):
-            w = '<unk>'
-        for k, p in dic[w]:
-            dp[i][i][k] = p
-            bt[i][i][k] = ((i, i, w))
-            bt[i][i][w] = ((i, i, w))
-            dp[i][i], bt[i][i] = unary(dic, k, dp[i][i], bt[i][i], i, i)
-    return dp, bt
-
-
-def cky(dp, bt, dic, sent):
-    for j in range(1, len(sent)):
-        for i in range(len(sent)):
-            _j = i+j
-            if _j+1 > len(sent):
-                continue
-            for k in range(i, _j):
-                if len(dp[i][k]) == 0 or len(dp[k+1][_j]) == 0:
-                    continue
-                left = dp[i][k]
-                right = dp[k+1][_j]
-                for t0, p0 in left.items():
-                    for t1, p1 in right.items():
-                        if '%s %s'%(t0, t1) not in dic:
-                            continue
-                        for t, p in dic['%s %s' % (t0, t1)]:
-                            _p = p0 + p1 + p
-                            if len(dp[i][_j]) == 0 or t not in dp[i][_j]:
-                                dp[i][_j][t] = _p
-                                bt[i][_j][t] = ((i, k, t0), (k+1, _j, t1))
-                            else:
-                                if _p > dp[i][_j][t]:
-                                    dp[i][_j][t] = _p
-                                    bt[i][_j][t] = ((i, k, t0), (k+1, _j, t1))
-            ts = list(dp[i][_j].keys())
-            for t in ts:
-                dp[i][_j], bt[i][_j] = unary(dic, t, dp[i][_j], bt[i][_j], i, _j)
-    return dp, bt
-
-
-def cky_kbest(dp, bt, dic, sent):
-    other_bt_count = 0
-    for j in range(1, len(sent)):
-        for i in range(len(sent)):
-            _j = i+j
-            if _j+1 > len(sent):
-                continue
-            for k in range(i, _j):
-                if len(dp[i][k]) == 0 or len(dp[k+1][_j]) == 0:
-                    continue
-                left = dp[i][k]
-                right = dp[k+1][_j]
-                for t0, p0 in left.items():
-                    for t1, p1 in right.items():
-                        if '%s %s'%(t0, t1) not in dic:
-                            continue
-                        for t, p in dic['%s %s' % (t0, t1)]:
-                            _p = p0 + p1 + p
-                            if len(dp[i][_j]) == 0 or t not in dp[i][_j]:
-                                dp[i][_j][t] = _p
-                                bt[i][_j][t] = ((i, k, t0), (k+1, _j, t1))
-                            else:
-                                if _p > dp[i][_j][t]:
-                                    dp[i][_j][t] = _p
-                                    bt[i][_j][t] = ((i, k, t0), (k+1, _j, t1))
-            ts = list(dp[i][_j].keys())
-            for t in ts:
-                dp[i][_j], bt[i][_j] = unary(dic, t, dp[i][_j], bt[i][_j], i, _j)
-    return dp, bt
-
-
-def get_cky(sent, unk):
-    sent = sent.strip().split()
-
-    dp, bt = initialize(sent, dic, unk)
-    # dp, bt = cky(dp, bt, dic, sent)
-    dp, bt = cky_kbest(dp, bt, dic, sent)
-
-    if 'TOP' in bt[0][len(sent) - 1]:
-        return backtrace(bt, 0, len(sent) - 1, 'TOP').strip()
-    else:
-        return 'NONE'
-
-
-if __name__ == '__main__':
-    dic = defaultdict(list)
-
-    grammar_path = sys.argv[1]
-    with open(grammar_path, 'r') as f:
-        for line in f.readlines():
-            if '->' in line:
-                k, v = line.split('->')
-                y, p = v.split('#')
-                dic[y.strip()].append((k.strip(), log(float(p))))
-
-    dp = defaultdict(lambda: defaultdict(dict))
-
-    unk = False
     if len(sys.argv) > 2:
-        unk = True
+        with open(sys.argv[2], 'r') as f:
+            for word in f:
+                lexicon.add(word.strip().split()[0])
 
-    for sent in sys.stdin:
-        sent = sent.strip().split()
-
-        dp, bt = initialize(sent, dic, unk)
-        dp, bt = cky(dp, bt, dic, sent)
-
-        if 'TOP' in bt[0][len(sent)-1]:
-            print(backtrace(bt, 0, len(sent)-1, 'TOP').strip())
+    # read in grammers
+    with open(sys.argv[1], 'r') as f:
+        rules = f.readlines()
+    for rule in rules[1:]:
+        p = rule.split()
+        k1 = p[0]
+        if len(p) == 5:
+            k2 = (p[2],)
+            runa[k1][k2] = -math.log(float(p[-1]))
         else:
-            print('NONE')
+            k2 = (p[2],p[3])
+            rbin[k1][k2] = -math.log(float(p[-1]))
+
+
+    for line in sys.stdin:
+        sentence_origin = line.strip().split()
+        sentence = []
+        for x in sentence_origin:
+            if len(sys.argv) > 2 and x not in lexicon:
+                x = '<unk>'
+            sentence.append(x)
+        dp, back = cky(sentence)
+
+        print(math.exp(-dp[0][len(sentence)]['TOP']))
+        res = backtrack(0, len(sentence),'TOP', sentence_origin, back)
+        if len(res) != 0:
+            print debinarize(Tree.parse(res))
+        else:
+            print 'NONE'
