@@ -132,7 +132,7 @@ class Parser(object):
 
 
 if __name__ == "__main__":
-
+    parser = Parser()
     kbest = 5
     for line in sys.stdin:
         sentence_origin = line.strip().split()
