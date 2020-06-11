@@ -5,7 +5,8 @@ from pysmt.typing import INT
 from const import PL, DT_SG_WORDS, DT_PL_WORDS
 from tree import Tree
 from read_config import read_features
-from cky import get_cky
+from kbest_cky import Parser
+from old_cky import get_cky
 
 
 CONF = 'feature_grammar.fcfg'
@@ -93,10 +94,19 @@ def check_in_language(tree_str, conf_file):
 
 
 with open('test_small.txt', 'r') as f:
+    parser = Parser()
+    kbest = 4
     for sent_raw in f.readlines():
-        cky_res = get_cky(sent_raw, unk=True)
-        res = check_in_language(cky_res, CONF)
-        if res is None:
+        sentence_origin = sent_raw.strip().split()
+        result = parser.parse(sentence_origin, kbest)
+        in_language_flag = False
+        for cky_res in result:
+            res = check_in_language(cky_res[1], CONF)
+            if res is None:
+                continue
+            else:
+                print(res)
+                in_language_flag = True
+                break
+        if not in_language_flag:
             print('Not in the language : ' + sent_raw.strip())
-        else:
-            print(cky_res)

@@ -903,8 +903,8 @@ class FlagValues:
     try:
 			# N.B.: return the rest of the command-line! (non-flag arguments)
       return self.__call2__(argv)
-    except FlagsError, e:
-        print 'Error: %s\nUsage: %s [flags]\n%s' % (e, list(argv)[0], FLAGS)
+    except FlagsError as e:
+        print('Error: %s\nUsage: %s [flags]\n%s' % (e, list(argv)[0], FLAGS))
         sys.exit(1)
 
 
@@ -987,7 +987,7 @@ class FlagValues:
       try:
         optlist, unparsed_args = getopt.getopt(args, shortopts, longopts)
         break
-      except getopt.GetoptError, e:
+      except getopt.GetoptError as e:
         if not e.opt or e.opt in fl:
           # Not an unrecognized option, reraise the exception as a FlagsError
           raise FlagsError(e)
@@ -1150,7 +1150,7 @@ class FlagValues:
       flaghelp = ""
       # lhuang:
       if flag.name in ["help", "helpshort"]:
-			  continue
+        continue
 			
       if flag.short_name:
         flaghelp += "-" if len(flag.short_name) == 1 else "--"  # lhuang: shortname can be long
@@ -1274,9 +1274,9 @@ class FlagValues:
     flag_line_list = []  # Subset of lines w/o comments, blanks, flagfile= tags.
     try:
       file_obj = open(filename, 'r')
-    except IOError, e_msg:
-      print e_msg
-      print 'ERROR:: Unable to open flagfile: %s' % (filename)
+    except IOError as e_msg:
+      print(e_msg)
+      print('ERROR:: Unable to open flagfile: %s' % (filename))
       return flag_line_list
 
     line_list = file_obj.readlines()
@@ -1540,7 +1540,7 @@ class Flag:
   def Parse(self, argument):
     try:
       self.value = self.parser.Parse(argument)
-    except ValueError, e:  # recast ValueError as IllegalFlagValue
+    except ValueError as e:  # recast ValueError as IllegalFlagValue
       raise IllegalFlagValue("flag --%s: %s" % (self.name, e))
     self.present += 1
 
@@ -1889,10 +1889,10 @@ class HelpFlag(BooleanFlag):
     if arg:
       doc = sys.modules["__main__"].__doc__
       flags = str(FLAGS)
-      print doc or ("\nUSAGE: %s [flags]\n" % sys.argv[0])
+      print(doc or ("\nUSAGE: %s [flags]\n" % sys.argv[0]))
       if flags:
-        print "flags:"
-        print flags
+        print("flags:")
+        print(flags)
       sys.exit(1)
 
 
@@ -1925,10 +1925,10 @@ class HelpshortFlag(BooleanFlag):
     if arg:
       doc = sys.modules["__main__"].__doc__
       flags = FLAGS.MainModuleHelp()
-      print doc or ("\nUSAGE: %s [flags]\n" % sys.argv[0])
+      print(doc or ("\nUSAGE: %s [flags]\n" % sys.argv[0]))
       if flags:
-        print "flags:"
-        print flags
+        print("flags:")
+        print(flags)
       sys.exit(1)
 
 

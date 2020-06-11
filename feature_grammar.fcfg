@@ -4,6 +4,9 @@
 
 # rules
 S[NUM=?] -> NP[NUM=?] VP[NUM=?]
+FRAG[NUM=?] -> NP[NUM=?] VP[NUM=?]
+NP[NUM=?] -> NP[NUM=?] VP[NUM=?]
+NP[NUM=?] -> NP[NUM=?]
 NP[NUM=2] -> NNS[NUM=2]
 NP[NUM=2] -> NNPS[NUM=2]
 NP[NUM=2] -> DT[NUM=2] NNS[NUM=2]

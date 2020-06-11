@@ -50,13 +50,13 @@ class Parser(object):
         back = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
         n = len(sentence)
 
-        for i in xrange(n):
+        for i in range(n):
             dp[i][i+1][sentence[i]] = [[1.0, ()]]
 
-        for diff in xrange(1,n+1):
-            for i in xrange(n - diff + 1):
+        for diff in range(1,n+1):
+            for i in range(n - diff + 1):
                 j = i + diff
-                for k in xrange(i+1, j):
+                for k in range(i+1, j):
                     for r1 in self.rbin:
                         tmp = []
                         for r2 in self.rbin[r1]:
@@ -71,10 +71,10 @@ class Parser(object):
                                 tmp.append(t)
                         dp[i][j][r1] = sorted(tmp, key=lambda x: x[0])[:-kbest-1:-1]
 
-                for itr in xrange(10):
+                for itr in range(10):
                     self.unary(i, j, sentence, dp, kbest)
 
-        for i in xrange(10):
+        for i in range(10):
             self.unary(0, len(sentence), sentence, dp, kbest)
         return dp
 
@@ -86,8 +86,8 @@ class Parser(object):
             try:
                 (k, r2, left_idx, right_idx) = dp[i][j][r1][idx][1]
             except Exception:
-                print dp[i][j][r1]
-                dafasdfasd
+                print(dp[i][j][r1])
+                # dafasdfasd
             if k == 'Terminal':
                 return '(' + r1 + ' ' + sentence_origin[i] + ')'
             elif k == 'NonTerminal':
@@ -138,12 +138,12 @@ if __name__ == "__main__":
         sentence_origin = line.strip().split()
 
         result = parser.parse(sentence_origin, kbest)
-        print result
+        print(result)
         for score, res in result:
-            print score
+            print(score)
             if len(res) != 0:
-                print parser.debinarize(Tree.parse(res))
+                print(parser.debinarize(Tree.parse(res)))
             else:
-                print 'NONE'
+                print('NONE')
 
 
